@@ -1,0 +1,139 @@
+-- Customers Table (Optional)
+CREATE TABLE "customers" (
+  "id" SERIAL PRIMARY KEY,
+  "name" VARCHAR(255) NOT NULL,
+  "phoneno" VARCHAR(255) NOT NULL,
+  "email" VARCHAR(255) NOT NULL UNIQUE,
+  "created_at" TIMESTAMP DEFAULT now()
+);
+
+-- Products Table
+CREATE TABLE "products" (
+  "id" SERIAL PRIMARY KEY,
+  "name" VARCHAR(255) NOT NULL,
+  "price" DECIMAL(10, 2) NOT NULL,
+  "stock" INT NOT NULL DEFAULT 0,
+  "created_at" TIMESTAMP DEFAULT now()
+);
+
+-- Orders Table
+CREATE TABLE "orders" (
+  "id" SERIAL PRIMARY KEY,
+  "customer_id" INT NOT NULL,
+  "order_status" VARCHAR(20),
+  "order_date" TIMESTAMP DEFAULT now(),
+  "total_price" DECIMAL(10, 2) NOT NULL,
+  CONSTRAINT fk_customer FOREIGN KEY ("customer_id") REFERENCES "customers" ("id") ON DELETE CASCADE
+);
+
+-- Order Items Table
+CREATE TABLE "order_items" (
+  "id" SERIAL PRIMARY KEY,
+  "order_id" INT NOT NULL,
+  "product_id" INT NOT NULL,
+  "quantity" INT NOT NULL CHECK (quantity > 0),
+  "price" DECIMAL(10, 2) NOT NULL,
+  CONSTRAINT fk_order FOREIGN KEY ("order_id") REFERENCES "orders" ("id") ON DELETE CASCADE,
+  CONSTRAINT fk_product FOREIGN KEY ("product_id") REFERENCES "products" ("id") ON DELETE CASCADE
+);
+
+
+
+API Endpoints
+Core functionality includes:
+
+    Create Order: Allows users to create an order with multiple items.
+
+    Get Orders: Retrieve all orders for a customer.
+
+    Get Order Details: Retrieve details of a specific order.
+
+    Update Order: Update an order's items.
+
+    Delete Order: Cancel an order.
+
+// Routes
+router.POST("/orders", handler.handleCreateOrder)
+router.GET("/orders/:id", handler.handleGetOrderDetails)
+router.GET("/customers/:customerId/orders", handler.handleGetCustomerOrders)
+router.PUT("/orders/:id", handler.handleUpdateOrder)
+router.DELETE("/orders/:id", handler.handleDeleteOrder)
+
+
+1 // Create order
+func (h *OrderHandler) handleCreateOrder(c *gin.Context) {
+    var req repo.CreateOrderParams
+    err := c.ShouldBindJSON(&req)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    order, err := h.querier.CreateOrder(c, req)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, order)
+}
+
+2 //Get order Getorderdetail
+func (h *OrderHandler) handleGetOrderDetails(c *gin.Context) {
+    orderID := c.Param("id")
+
+    orderDetails, err := h.querier.GetOrderDetails(c, orderID)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, orderDetails)
+}
+
+
+3 //get customer orders
+func (h *OrderHandler) handleGetCustomerOrders(c *gin.Context) {
+    customerID := c.Param("customerId")
+
+    orders, err := h.querier.GetCustomerOrders(c, customerID)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, orders)
+}
+
+
+1 //create order and order item 
+-- name: CreateOrder :one
+INSERT INTO orders (customer_id, order_date, total_price)
+VALUES ($1, now(), $2)
+RETURNING id, customer_id, order_date, total_price;
+
+-- name: CreateOrderItem :exec
+INSERT INTO order_items (order_id, product_id, quantity, price)
+VALUES ($1, $2, $3, $4);
+
+
+2 //get order Details
+-- name: GetOrderDetails :many
+SELECT o.id AS order_id, o.customer_id, o.total_price, o.order_date,
+       oi.product_id, p.name AS product_name, oi.quantity, oi.price
+FROM orders o
+JOIN order_items oi ON o.id = oi.order_id
+JOIN products p ON oi.product_id = p.id
+WHERE o.id = $1;
+
+
+3 //get customer orders
+-- name: GetCustomerOrders :many
+SELECT id, customer_id, total_price, order_date
+FROM orders
+WHERE customer_id = $1;
+
+
+Final Notes
+
+This structure allows you to store orders for an e-commerce application with a well-defined schema and scalable API design. Let me know if you’d like more specific implementations or enhancements! 
