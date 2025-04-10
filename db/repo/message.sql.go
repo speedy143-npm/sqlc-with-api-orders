@@ -7,76 +7,141 @@ package repo
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createMessage = `-- name: CreateMessage :one
-INSERT INTO message (thread, sender, content)
+const createCustomer = `-- name: CreateCustomer :one
+INSERT INTO customer (name, phoneno, email)
 VALUES ($1, $2, $3)
-RETURNING id, thread, sender, content, created_at
+RETURNING id, name, phoneno, email, created_at
 `
 
-type CreateMessageParams struct {
-	Thread  string `json:"thread"`
-	Sender  string `json:"sender"`
-	Content string `json:"content"`
+type CreateCustomerParams struct {
+	Name    string `json:"name"`
+	Phoneno string `json:"phoneno"`
+	Email   string `json:"email"`
 }
 
-func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error) {
-	row := q.db.QueryRow(ctx, createMessage, arg.Thread, arg.Sender, arg.Content)
-	var i Message
+func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) (Customer, error) {
+	row := q.db.QueryRow(ctx, createCustomer, arg.Name, arg.Phoneno, arg.Email)
+	var i Customer
 	err := row.Scan(
 		&i.ID,
-		&i.Thread,
-		&i.Sender,
-		&i.Content,
+		&i.Name,
+		&i.Phoneno,
+		&i.Email,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
-const getMessageByID = `-- name: GetMessageByID :one
-SELECT id, thread, sender, content, created_at FROM message
+const createOrder = `-- name: CreateOrder :one
+INSERT INTO "order" (customer_id, order_status, order_date, total_price)
+VALUES ($1, $2, $3, $4)
+RETURNING id, customer_id, order_status, order_date, total_price
+`
+
+type CreateOrderParams struct {
+	CustomerID  string           `json:"customer_id"`
+	OrderStatus *string          `json:"order_status"`
+	OrderDate   pgtype.Timestamp `json:"order_date"`
+	TotalPrice  pgtype.Numeric   `json:"total_price"`
+}
+
+func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
+	row := q.db.QueryRow(ctx, createOrder,
+		arg.CustomerID,
+		arg.OrderStatus,
+		arg.OrderDate,
+		arg.TotalPrice,
+	)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.CustomerID,
+		&i.OrderStatus,
+		&i.OrderDate,
+		&i.TotalPrice,
+	)
+	return i, err
+}
+
+const createOrderItem = `-- name: CreateOrderItem :one
+INSERT INTO "order_item" (order_id, product_id, quantity, price)
+VALUES ($1, $2, $3, $4)
+RETURNING id, order_id, product_id, quantity, price, created_at
+`
+
+type CreateOrderItemParams struct {
+	OrderID   string         `json:"order_id"`
+	ProductID string         `json:"product_id"`
+	Quantity  int32          `json:"quantity"`
+	Price     pgtype.Numeric `json:"price"`
+}
+
+func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error) {
+	row := q.db.QueryRow(ctx, createOrderItem,
+		arg.OrderID,
+		arg.ProductID,
+		arg.Quantity,
+		arg.Price,
+	)
+	var i OrderItem
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.ProductID,
+		&i.Quantity,
+		&i.Price,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const createProduct = `-- name: CreateProduct :one
+INSERT INTO product (name, price, stock)
+VALUES ($1, $2, $3)
+RETURNING id, name, price, stock, created_at
+`
+
+type CreateProductParams struct {
+	Name  string         `json:"name"`
+	Price pgtype.Numeric `json:"price"`
+	Stock int32          `json:"stock"`
+}
+
+func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error) {
+	row := q.db.QueryRow(ctx, createProduct, arg.Name, arg.Price, arg.Stock)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Price,
+		&i.Stock,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getCustomerById = `-- name: GetCustomerById :many
+SELECT id FROM customer 
 WHERE id = $1
 `
 
-func (q *Queries) GetMessageByID(ctx context.Context, id string) (Message, error) {
-	row := q.db.QueryRow(ctx, getMessageByID, id)
-	var i Message
-	err := row.Scan(
-		&i.ID,
-		&i.Thread,
-		&i.Sender,
-		&i.Content,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const getMessagesByThread = `-- name: GetMessagesByThread :many
-SELECT id, thread, sender, content, created_at FROM message
-WHERE thread = $1
-ORDER BY created_at DESC
-`
-
-func (q *Queries) GetMessagesByThread(ctx context.Context, thread string) ([]Message, error) {
-	rows, err := q.db.Query(ctx, getMessagesByThread, thread)
+func (q *Queries) GetCustomerById(ctx context.Context, id string) ([]string, error) {
+	rows, err := q.db.Query(ctx, getCustomerById, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Message{}
+	items := []string{}
 	for rows.Next() {
-		var i Message
-		if err := rows.Scan(
-			&i.ID,
-			&i.Thread,
-			&i.Sender,
-			&i.Content,
-			&i.CreatedAt,
-		); err != nil {
+		var id string
+		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -84,91 +149,119 @@ func (q *Queries) GetMessagesByThread(ctx context.Context, thread string) ([]Mes
 	return items, nil
 }
 
-
-
-
- const deleteMessage = ` -- name: DeleteMessage :one
- DELETE FROM message WHERE id = $1`
-// my code to delete a message by id
-func (q *Queries) DeleteMessage(ctx context.Context, messageID string) error {
-   
-    _, err := q.db.Exec(ctx, deleteMessage, messageID)
-    if err != nil {
-        return err
-    }
-    return nil
-}
-
-// update query
-const updateMessage = `-- name: UpdateMessage :one
-UPDATE message
-SET  thread=$1,
-     sender=$2,
-     content=$3
-
-RETURNING id, thread, sender, content, created_at
+const getCustomerByPhoneNo = `-- name: GetCustomerByPhoneNo :many
+SELECT phoneno FROM customer 
+WHERE phoneno = $1
 `
 
-// struct to hold update
-type PatchMessageParams struct {
-	//ID string `json:"id"`
-	Thread  string `json:"thread"`
-	Sender  string `json:"sender"`
-	Content string `json:"content"`
+func (q *Queries) GetCustomerByPhoneNo(ctx context.Context, phoneno string) ([]string, error) {
+	rows, err := q.db.Query(ctx, getCustomerByPhoneNo, phoneno)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var phoneno string
+		if err := rows.Scan(&phoneno); err != nil {
+			return nil, err
+		}
+		items = append(items, phoneno)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-// my code to update a message by id
-func (q *Queries) PatchMessage(ctx context.Context, messageID string, arg PatchMessageParams) (Message, error) {
-    row := q.db.QueryRow(ctx, updateMessage, arg.Thread, arg.Sender, arg.Content)
-    var i Message
-    err := row.Scan(
-		&i.ID,
-        &i.Thread,
-        &i.Sender,
-        &i.Content,
-        &i.CreatedAt,
-    )
-    return i, err
-}
-
-
-
-// creating a thread
-const CreateThread = `-- name: CreateThread :one
-INSERT INTO thread (thread)
-VALUES ($1)
-RETURNING id, thread, created_at
-`
-
-type CreateThreadParams struct {
-	Thread  string `json:"thread"`
-}
-
-func (q *Queries) CreateThread(ctx context.Context, arg CreateThreadParams) (Thread, error) {
-	row := q.db.QueryRow(ctx, CreateThread, arg.Thread)
-	var i Thread
-	err := row.Scan(
-		&i.ID,
-		&i.Thread,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-
-// getting a thread by ID 
-const getThreadByID = `-- name: GetThreadByID :one
-SELECT id, thread, created_at FROM thread
+const getOrderById = `-- name: GetOrderById :many
+SELECT id FROM "order" 
 WHERE id = $1
 `
 
-func (q *Queries) GetThreadByID(ctx context.Context, id string) (Thread, error) {
-	row := q.db.QueryRow(ctx, getThreadByID, id)
-	var i Thread
-	err := row.Scan(
-		&i.ID,
-		&i.Thread,
-		&i.CreatedAt,
-	)
-	return i, err
+func (q *Queries) GetOrderById(ctx context.Context, id string) ([]string, error) {
+	rows, err := q.db.Query(ctx, getOrderById, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
+
+const getOrderItemById = `-- name: GetOrderItemById :many
+SELECT id FROM "order_item" 
+WHERE id = $1
+`
+
+func (q *Queries) GetOrderItemById(ctx context.Context, id string) ([]string, error) {
+	rows, err := q.db.Query(ctx, getOrderItemById, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getProductById = `-- name: GetProductById :many
+SELECT id FROM product 
+WHERE id = $1
+`
+
+func (q *Queries) GetProductById(ctx context.Context, id string) ([]string, error) {
+	rows, err := q.db.Query(ctx, getProductById, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+// const updateOrderById = `-- name: UpdateOrderById :exec
+// UPDATE "order" 
+// SET order_status = $1
+// WHERE id = $2
+// `
+
+// type UpdateOrderByIdParams struct {
+// 	OrderStatus *string `json:"order_status"`
+// 	ID          string  `json:"id"`
+// }
+
+// func (q *Queries) UpdateOrderById(ctx context.Context, arg UpdateOrderByIdParams) error {
+// 	_, err := q.db.Exec(ctx, updateOrderById, arg.OrderStatus, arg.ID)
+// 	return err
+// }
+

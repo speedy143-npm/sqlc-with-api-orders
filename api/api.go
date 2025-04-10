@@ -1,10 +1,18 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
+	"fmt"
 	"net/http"
+	"os"
+	"time"
 
+	httpRequests "github.com/Iknite-Space/sqlc-example-api/campay_api/Payment"
 	"github.com/Iknite-Space/sqlc-example-api/db/repo"
 	"github.com/gin-gonic/gin"
+	//"google.golang.org/protobuf/internal/errors"
+	//"google.golang.org/protobuf/internal/errors"
 )
 
 type MessageHandler struct {
@@ -25,17 +33,133 @@ func (h *MessageHandler) WireHttpHandler() http.Handler {
 		c.AbortWithStatus(http.StatusInternalServerError)
 	}))
 
-	r.POST("/message", h.handleCreateMessage)
-	r.GET("/message/:id", h.handleGetMessage)
-	r.GET("/thread/:id/messages", h.handleGetThreadMessages)
-	r.DELETE("/message/:id", h.handleDeleteMessage)
-	r.PATCH("/message/:id", h.handleUpdateMessage)
-	//creating a thread
-	r.POST("/thread", h.handleCreateThread)
+	r.POST("/customer", h.handleCreateCustomer)
+	// r.GET("/customer/:phone", h.handleGetCustomerByPhoneNo)
+
+	// r.POST("/product", h.handleCreateProduct)
+	//r.GET("/product/:id", h.handleGetProductById)
+	r.POST("/order/:customer_id/placeorder", h.handleCreateOrder)
 
 	return r
 }
 
+func (h *MessageHandler) handleCreateCustomer(c *gin.Context) {
+	var req repo.CreateCustomerParams
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	customer, err := h.querier.CreateCustomer(c, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, customer)
+}
+
+func (h *MessageHandler) handleGetCustomerByPhoneNo(c *gin.Context) {
+	var req = c.Param("phone")
+	if req == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Phone number is required"})
+		return
+	}
+	customer, err := h.querier.GetCustomerByPhoneNo(c, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, customer)
+}
+
+func (h *MessageHandler) handleCreateProduct(c *gin.Context) {
+	var req repo.CreateProductParams
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	product, err := h.querier.CreateProduct(c, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, product)
+}
+
+func (h *MessageHandler) handleGetProductById(c *gin.Context) {
+	var req = c.Param("id")
+	if req == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Id number is required"})
+		return
+	}
+	product, err := h.querier.GetProductById(c, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, product)
+}
+
+func (h *MessageHandler) handleCreateOrder(c *gin.Context) {
+	id := c.Param("customer_id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Id not available"})
+		return
+	}
+	var req repo.CreateOrderParams
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var reg repo.CreateCustomerParams
+	errw := c.ShouldBindJSON(&reg)
+	if errw != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errw.Error()})
+		return
+	}
+
+	// Check if the customer exists
+	_, errs := h.querier.GetCustomerById(c, id)
+	if errs != nil {
+		if errors.Is(errs, sql.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Customer ID Not found"})
+		}
+		// else {
+		// 	c.JSON(http.StatusInternalServerError, gin.H{"error": errs.Error()})
+		// }
+		// return
+
+	}
+
+	order, err := h.querier.CreateOrder(c, req)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	apikey := os.Getenv("API_KEY")
+
+	trans := httpRequests.RequestPayment(apikey, reg.Phoneno, fmt.Sprintf("%v", req.TotalPrice), "description", "ex_ref")
+
+	time.Sleep(10 * time.Second)
+
+	state := httpRequests.CheckPaymentStatus(apikey, trans.Reference)
+
+	c.JSON(http.StatusOK, gin.H{"Success": order, "Payment_details": trans, "status": state})
+
+}
+
+/*
 func (h *MessageHandler) handleCreateMessage(c *gin.Context) {
 	var req repo.CreateMessageParams
 	err := c.ShouldBindBodyWithJSON(&req)
@@ -168,3 +292,5 @@ func (h *MessageHandler) handleCreateThread(c *gin.Context) {
 }
 
 //creating a get thread by id handler
+
+*/

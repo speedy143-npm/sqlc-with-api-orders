@@ -137,3 +137,70 @@ WHERE customer_id = $1;
 Final Notes
 
 This structure allows you to store orders for an e-commerce application with a well-defined schema and scalable API design. Let me know if you’d like more specific implementations or enhancements! 
+
+
+
+
+
+
+const createCustomer = `-- name: CreateCustomer :one
+INSERT INTO customer (name, phoneno, email)
+VALUES ($1, $2, $3)
+RETURNING id, name, phoneno, email, created_at
+`
+
+type CreateCustomerParams struct {
+	Name      string          `json:"name"`
+	Phoneno   string          `json:"phoneno"`
+	Email     string          `json:"email"`
+}
+
+func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) (Customer, error) {
+	row := q.db.QueryRow(ctx, createCustomer, arg.Name, arg.Phoneno, arg.Email)
+	var i Customer
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Phoneno,
+		&i.Email,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+
+const getCustomerByPhoneno = `-- name: GetCustomerByPhoneNo : many
+SELECT phoneno FROM customer 
+WHERE phoneno = $1`
+
+func (q *Queries) GetCustomerByPhoneNo(ctx context.Context, phoneno string) ([]Customer, error) {
+	rows, err := q.db.Query(ctx, getCustomerByPhoneno, phoneno)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Customer{}
+	for rows.Next() {
+		var i Customer
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Phoneno,
+			&i.Email,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+
+
+
+CreateCustomer(ctx context.Context, arg CreateCustomerParams) (Customer, error)
+	GetCustomerByPhoneNo(ctx context.Context, phoneno string) ([]Customer, error)

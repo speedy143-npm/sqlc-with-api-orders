@@ -32,6 +32,7 @@ type Config struct {
 	ListenPort     uint16 `conf:"env:LISTEN_PORT,required"`
 	MigrationsPath string `conf:"env:MIGRATIONS_PATH,required"`
 	DB             DBConfig
+	Apikey         string `conf:"env:API_KEY,required"`
 }
 
 func main() {
