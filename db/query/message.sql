@@ -9,7 +9,7 @@ RETURNING *;
 SELECT phoneno FROM customer 
 WHERE phoneno = $1;
 
--- name: GetCustomerById :many
+-- name: GetCustomerById :one
 SELECT * FROM customer 
 WHERE id = $1
 LIMIT 1;
@@ -19,7 +19,7 @@ INSERT INTO product (name, price, stock)
 VALUES ($1, $2, $3)
 RETURNING *;
 
--- name: GetProductById :many
+-- name: GetProductById :one
 SELECT id FROM product 
 WHERE id = $1;
 
@@ -29,7 +29,7 @@ INSERT INTO "order" (customer_id, order_status, order_date, total_price)
 VALUES ($1, $2, $3, $4)
 RETURNING *;
 
--- name: GetOrderById :many
+-- name: GetOrderById :one
 SELECT id FROM "order" 
 WHERE id = $1;
 
@@ -39,11 +39,11 @@ INSERT INTO "order_item" (order_id, product_id, quantity, price)
 VALUES ($1, $2, $3, $4)
 RETURNING *;
 
--- name: GetOrderItemById :many
+-- name: GetOrderItemById :one
 SELECT id FROM "order_item" 
 WHERE id = $1;
 
--- name: UpdateOrderById :many 
+-- name: UpdateOrderById :one 
 UPDATE "order" 
 SET order_status = $2
 WHERE id = $1
