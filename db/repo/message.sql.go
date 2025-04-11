@@ -249,19 +249,40 @@ func (q *Queries) GetProductById(ctx context.Context, id string) ([]string, erro
 	return items, nil
 }
 
-// const updateOrderById = `-- name: UpdateOrderById :exec
-// UPDATE "order" 
-// SET order_status = $1
-// WHERE id = $2
-// `
+const updateOrderById = `-- name: UpdateOrderById :many
+UPDATE "order" 
+SET order_status = $2
+WHERE id = $1
+RETURNING id, customer_id, order_status, order_date, total_price
+`
 
-// type UpdateOrderByIdParams struct {
-// 	OrderStatus *string `json:"order_status"`
-// 	ID          string  `json:"id"`
-// }
+type UpdateOrderByIdParams struct {
+	ID          string  `json:"id"`
+	OrderStatus *string `json:"order_status"`
+}
 
-// func (q *Queries) UpdateOrderById(ctx context.Context, arg UpdateOrderByIdParams) error {
-// 	_, err := q.db.Exec(ctx, updateOrderById, arg.OrderStatus, arg.ID)
-// 	return err
-// }
-
+func (q *Queries) UpdateOrderById(ctx context.Context, od string, st string) ([]Order, error) {
+	rows, err := q.db.Query(ctx, updateOrderById, od, st)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Order{}
+	for rows.Next() {
+		var i Order
+		if err := rows.Scan(
+			&i.ID,
+			&i.CustomerID,
+			&i.OrderStatus,
+			&i.OrderDate,
+			&i.TotalPrice,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

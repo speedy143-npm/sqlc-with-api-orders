@@ -155,7 +155,16 @@ func (h *MessageHandler) handleCreateOrder(c *gin.Context) {
 
 	state := httpRequests.CheckPaymentStatus(apikey, trans.Reference)
 
-	c.JSON(http.StatusOK, gin.H{"Success": order, "Payment_details": trans, "status": state})
+	var st = state.Status
+	var od = order.ID
+
+	orders, errq := h.querier.UpdateOrderById(c, od, st)
+	if errq != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errq.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"Success": orders, "Payment_details": trans, "status": state})
 
 }
 

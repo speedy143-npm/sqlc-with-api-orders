@@ -42,10 +42,11 @@ RETURNING *;
 SELECT id FROM "order_item" 
 WHERE id = $1;
 
--- name: UpdateOrderById :exec 
+-- name: UpdateOrderById :many 
 UPDATE "order" 
-SET order_status = $?
-WHERE id = $1;
+SET order_status = $2
+WHERE id = $1
+RETURNING *;
 
 
 -- -- name: CreateMessage :one

@@ -18,7 +18,7 @@ type Querier interface {
 	GetOrderById(ctx context.Context, id string) ([]string, error)
 	GetOrderItemById(ctx context.Context, id string) ([]string, error)
 	GetProductById(ctx context.Context, id string) ([]string, error)
-	
+	UpdateOrderById(ctx context.Context, od string, st string) ([]Order, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -22,7 +22,7 @@ CREATE TABLE "customer" (
 CREATE TABLE "order" (
   "id" VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::varchar(36),
   "customer_id" VARCHAR(36) NOT NULL,
-  "order_status" VARCHAR(20) CHECK ("order_status" IN ('Failed', 'Pending', 'Paid')),
+  "order_status" VARCHAR(20) CHECK ("order_status" IN ('FAILED', 'PENDING', 'PAID')),
   "order_date" TIMESTAMP DEFAULT now(),
   "total_price" DECIMAL(10, 2) NOT NULL,
   CONSTRAINT fk_customer FOREIGN KEY ("customer_id") REFERENCES "customer" ("id") ON DELETE CASCADE
