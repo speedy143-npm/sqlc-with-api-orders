@@ -120,15 +120,15 @@ func (h *MessageHandler) handleCreateOrder(c *gin.Context) {
 		return
 	}
 
-	var reg repo.CreateCustomerParams
-	errw := c.ShouldBindJSON(&reg)
-	if errw != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errw.Error()})
-		return
-	}
+	// var reg repo.CreateCustomerParams
+	// errw := c.ShouldBindJSON(&reg)
+	// if errw != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": errw.Error()})
+	// 	return
+	// }
 
 	// Check if the customer exists
-	_, errs := h.querier.GetCustomerById(c, id)
+	Customer, errs := h.querier.GetCustomerById(c, id)
 	if errs != nil {
 		if errors.Is(errs, sql.ErrNoRows) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Customer ID Not found"})
@@ -140,7 +140,7 @@ func (h *MessageHandler) handleCreateOrder(c *gin.Context) {
 
 	}
 
-	order, err := h.querier.CreateOrder(c, req)
+	order, err := h.querier.CreateOrder(c, id, req)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -149,16 +149,20 @@ func (h *MessageHandler) handleCreateOrder(c *gin.Context) {
 
 	apikey := os.Getenv("API_KEY")
 
-	trans := httpRequests.RequestPayment(apikey, reg.Phoneno, fmt.Sprintf("%v", req.TotalPrice), "description", "ex_ref")
+	trans := httpRequests.RequestPayment(apikey, Customer[0].Phoneno, fmt.Sprintf("%v", req.TotalPrice), "description", "ex_ref")
 
 	time.Sleep(10 * time.Second)
 
 	state := httpRequests.CheckPaymentStatus(apikey, trans.Reference)
 
-	var st = state.Status
-	var od = order.ID
+	// var st = state.Status
+	// var odI = order.ID
 
-	orders, errq := h.querier.UpdateOrderById(c, od, st)
+	var updateParams = UpdateOrderByIdParams{
+		ID:          order.ID,
+		OrderStatus: state.Status,
+	}
+	orders, errq := h.querier.UpdateOrderById(c, updateParams)
 	if errq != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": errq.Error()})
 		return

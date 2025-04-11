@@ -10,15 +10,15 @@ import (
 
 type Querier interface {
 	CreateCustomer(ctx context.Context, arg CreateCustomerParams) (Customer, error)
-	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
+	CreateOrder(ctx context.Context,id string, arg CreateOrderParams) (Order, error)
 	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error)
 	CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error)
-	GetCustomerById(ctx context.Context, id string) ([]string, error)
+	GetCustomerById(ctx context.Context, id string) ([]Customer, error)
 	GetCustomerByPhoneNo(ctx context.Context, phoneno string) ([]string, error)
 	GetOrderById(ctx context.Context, id string) ([]string, error)
 	GetOrderItemById(ctx context.Context, id string) ([]string, error)
 	GetProductById(ctx context.Context, id string) ([]string, error)
-	UpdateOrderById(ctx context.Context, od string, st string) ([]Order, error)
+	UpdateOrderById(ctx context.Context, arg UpdateOrderByIdParams) ([]Order, error)
 }
 
 var _ Querier = (*Queries)(nil)

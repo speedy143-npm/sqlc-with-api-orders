@@ -125,23 +125,30 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 }
 
 const getCustomerById = `-- name: GetCustomerById :many
-SELECT id FROM customer 
+SELECT id, name, phoneno, email, created_at FROM customer 
 WHERE id = $1
+LIMIT 1
 `
 
-func (q *Queries) GetCustomerById(ctx context.Context, id string) ([]string, error) {
+func (q *Queries) GetCustomerById(ctx context.Context, id string) ([]Customer, error) {
 	rows, err := q.db.Query(ctx, getCustomerById, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []string{}
+	items := []Customer{}
 	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
+		var i Customer
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Phoneno,
+			&i.Email,
+			&i.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
-		items = append(items, id)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -261,8 +268,8 @@ type UpdateOrderByIdParams struct {
 	OrderStatus *string `json:"order_status"`
 }
 
-func (q *Queries) UpdateOrderById(ctx context.Context, od string, st string) ([]Order, error) {
-	rows, err := q.db.Query(ctx, updateOrderById, od, st)
+func (q *Queries) UpdateOrderById(ctx context.Context, arg UpdateOrderByIdParams) ([]Order, error) {
+	rows, err := q.db.Query(ctx, updateOrderById, arg.ID, arg.OrderStatus)
 	if err != nil {
 		return nil, err
 	}

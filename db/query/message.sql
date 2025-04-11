@@ -10,8 +10,9 @@ SELECT phoneno FROM customer
 WHERE phoneno = $1;
 
 -- name: GetCustomerById :many
-SELECT id FROM customer 
-WHERE id = $1;
+SELECT * FROM customer 
+WHERE id = $1
+LIMIT 1;
 
 -- name: CreateProduct :one
 INSERT INTO product (name, price, stock)
