@@ -21,7 +21,7 @@ type Order struct {
 	CustomerID  string           `json:"customer_id"`
 	OrderStatus *string          `json:"order_status"`
 	OrderDate   pgtype.Timestamp `json:"order_date"`
-	TotalPrice  pgtype.Numeric   `json:"total_price"`
+	TotalPrice  string	  		 `json:"total_price"`
 }
 
 type OrderItem struct {
