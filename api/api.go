@@ -34,8 +34,8 @@ func (h *MessageHandler) WireHttpHandler() http.Handler {
 	r.POST("/customer", h.handleCreateCustomer)
 	// r.GET("/customer/:phone", h.handleGetCustomerByPhoneNo)
 
-	// r.POST("/product", h.handleCreateProduct)
-	//r.GET("/product/:id", h.handleGetProductById)
+	r.POST("/product", h.handleCreateProduct)
+	r.GET("/product/:id", h.handleGetProductById)
 	r.POST("/order/:customer_id/placeorder", h.handleCreateOrder)
 
 	return r
@@ -73,6 +73,7 @@ func (h *MessageHandler) handleGetCustomerByPhoneNo(c *gin.Context) {
 
 	c.JSON(http.StatusOK, customer)
 }
+*/
 
 func (h *MessageHandler) handleCreateProduct(c *gin.Context) {
 	var req repo.CreateProductParams
@@ -104,7 +105,7 @@ func (h *MessageHandler) handleGetProductById(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, product)
-} */
+}
 
 func (h *MessageHandler) handleCreateOrder(c *gin.Context) {
 	id := c.Param("customer_id")
@@ -131,6 +132,12 @@ func (h *MessageHandler) handleCreateOrder(c *gin.Context) {
 	order, err := h.querier.CreateOrder(c, id, req)
 
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "here"})
+		return
+	}
+
+	orde, err := h.querier.UpdateOrderTotalPriceById(c, order.ID)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -141,7 +148,7 @@ func (h *MessageHandler) handleCreateOrder(c *gin.Context) {
 	ref := generateRandomReference(12)
 
 	// making payment request via campay api
-	trans := httpRequests.RequestPayment(apikey, customer[0].Phoneno, order.TotalPrice, description, ref)
+	trans := httpRequests.RequestPayment(apikey, customer[0].Phoneno, orde.TotalPrice, description, ref)
 
 	time.Sleep(25 * time.Second)
 	// checking the payment status from campay api
@@ -159,6 +166,8 @@ func (h *MessageHandler) handleCreateOrder(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"Payment_details": trans, "Successfully created order": orders})
+
+	c.JSON(http.StatusOK, orders)
 
 }
 
