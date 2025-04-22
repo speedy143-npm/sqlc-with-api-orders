@@ -25,8 +25,8 @@ WHERE id = $1;
 
 
 -- name: CreateOrder :one
-INSERT INTO "order" (customer_id, order_status, order_date, total_price)
-VALUES ($1, $2, $3, $4)
+INSERT INTO "order" (customer_id, product_id, price, quantity, total_price)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: GetOrderById :one
@@ -45,28 +45,16 @@ WHERE id = $1;
 
 -- name: UpdateOrderById :one 
 UPDATE "order" 
-SET order_status = $2
+SET 
+order_status = $2
+WHERE id = $1
+RETURNING *;
+
+-- name: UpdateOrderTotalPriceById :one 
+UPDATE "order" 
+SET 
+ total_price = quantity * price
 WHERE id = $1
 RETURNING *;
 
 
--- -- name: CreateMessage :one
--- INSERT INTO message (thread, sender, content)
--- VALUES ($1, $2, $3)
--- RETURNING *;
-
--- -- name: GetMessageByID :one
--- SELECT * FROM message
--- WHERE id = $1;
-
--- -- name: GetMessagesByThread :many
--- SELECT * FROM message
--- WHERE thread = $1
--- ORDER BY created_at DESC;
-
-
--- -- creating a thread
--- -- name: CreateThread :one
--- INSERT INTO thread (thread)
--- VALUES ($1)
--- RETURNING *;
