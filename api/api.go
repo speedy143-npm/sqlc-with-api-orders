@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	httpRequests "github.com/Iknite-Space/sqlc-example-api/campay_api/Payment"
+	httpRequests "github.com/Iknite-Space/sqlc-example-api/campay"
 	"github.com/Iknite-Space/sqlc-example-api/db/repo"
 	"github.com/gin-gonic/gin"
 )
