@@ -5,21 +5,22 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"os"
 	"time"
 
-	httpRequests "github.com/Iknite-Space/sqlc-example-api/campay"
+	"github.com/Iknite-Space/sqlc-example-api/campay"
 	"github.com/Iknite-Space/sqlc-example-api/db/repo"
 	"github.com/gin-gonic/gin"
 )
 
 type MessageHandler struct {
-	querier repo.Querier
+	querier      repo.Querier
+	campayClient *campay.Requests
 }
 
-func NewMessageHandler(querier repo.Querier) *MessageHandler {
+func NewMessageHandler(querier repo.Querier, campayClient *campay.Requests) *MessageHandler {
 	return &MessageHandler{
-		querier: querier,
+		querier:      querier,
+		campayClient: campayClient,
 	}
 }
 
@@ -142,17 +143,18 @@ func (h *MessageHandler) handleCreateOrder(c *gin.Context) {
 		return
 	}
 
-	apikey := os.Getenv("API_KEY")
+	//apikey := os.Getenv("API_KEY")
 
 	description := "e-commerce order payment"
 	ref := generateRandomReference(12)
 
 	// making payment request via campay api
-	trans := httpRequests.RequestPayment(apikey, customer[0].Phoneno, orde.TotalPrice, description, ref)
+
+	trans := h.campayClient.RequestPayment(customer[0].Phoneno, orde.TotalPrice, description, ref)
 
 	time.Sleep(25 * time.Second)
 	// checking the payment status from campay api
-	state := httpRequests.CheckPaymentStatus(apikey, trans.Reference)
+	state := h.campayClient.CheckPaymentStatus(trans.Reference)
 
 	// updating the payment status from campay api to the database
 	var updateParams = repo.UpdateOrderByIdParams{

@@ -1,8 +1,10 @@
-package httpRequests
+package campay
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 )
@@ -24,22 +26,34 @@ type Status struct {
 }
 
 // Initiating request to get the status of the transaction
-func CheckPaymentStatus(apik, reference string) Status {
-	client := &http.Client{}
+func (clients *Requests) CheckPaymentStatus(reference string) Status {
 
-	url := fmt.Sprintf("https://demo.campay.net/api/transaction/%s", reference)
+	url := fmt.Sprintf(clients.baseUrl+"api/transaction/%s", reference)
+	responsebody, err := clients.makeHttpRequest("GET", url, nil)
 
-	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("Invalid Request, check post request credentials")
+		log.Fatal(err)
+	}
+
+	var checkState Status
+	json.NewDecoder(bytes.NewBuffer(responsebody)).Decode((&checkState))
+	return checkState
+
+}
+
+func (clients *Requests) makeHttpRequest(method string, url string, body io.Reader) ([]byte, error) {
+	req, err := http.NewRequest(method, url, body)
 
 	if err != nil {
 		fmt.Println("Check GET request credentials")
 		log.Fatal(err)
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", apik))
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", clients.apikey))
 	req.Header.Add("Content-Type", "application/json")
 
-	response, err := client.Do(req)
+	response, err := http.DefaultClient.Do(req)
 
 	if err != nil {
 		fmt.Println("Invalid Request, check post request credentials")
@@ -47,9 +61,11 @@ func CheckPaymentStatus(apik, reference string) Status {
 	}
 
 	defer response.Body.Close()
+	responsebody, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
 
-	var checkState Status
-	json.NewDecoder(response.Body).Decode((&checkState))
-	return checkState
+	}
+	return responsebody, nil
 
 }

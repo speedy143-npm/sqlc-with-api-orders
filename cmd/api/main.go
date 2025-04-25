@@ -14,6 +14,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/Iknite-Space/sqlc-example-api/api"
+	"github.com/Iknite-Space/sqlc-example-api/campay"
 	"github.com/Iknite-Space/sqlc-example-api/db/repo"
 )
 
@@ -77,9 +78,9 @@ func run() error {
 	}
 
 	querier := repo.New(db)
-
+	campayClient := campay.NewApiClient(os.Getenv("CAMPAY_BASE_URL"), os.Getenv("CAMPAY_API_KEY"))
 	// We create a new http handler using the database querier.
-	handler := api.NewMessageHandler(querier).WireHttpHandler()
+	handler := api.NewMessageHandler(querier, campayClient).WireHttpHandler()
 
 	// And finally we start the HTTP server on the configured port.
 	err = http.ListenAndServe(fmt.Sprintf(":%d", config.ListenPort), handler)

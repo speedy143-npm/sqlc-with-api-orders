@@ -1,4 +1,4 @@
-package httpRequests
+package campay
 
 import (
 	"bytes"
@@ -9,14 +9,14 @@ import (
 )
 
 type Requests struct {
-	BaseUrl string
-	Apikey  string
+	baseUrl string
+	apikey  string
 }
 
-func NewApiClient(baseurl string) *Requests {
+func NewApiClient(baseurl string, apikey string) *Requests {
 	return &Requests{
-		BaseUrl: baseurl,
-		// Apikey: apikey,
+		baseUrl: baseurl,
+		apikey:  apikey,
 	}
 }
 
@@ -47,7 +47,7 @@ type Transresponse struct {
 // }
 
 // Initiating mobile money withdrawal
-func RequestPayment(apik string, number string, amount string, description string, ref string) Transresponse {
+func (clients *Requests) RequestPayment(number string, amount string, description string, ref string) Transresponse {
 
 	//Requesting inputs from user
 	// for {
@@ -87,14 +87,14 @@ func RequestPayment(apik string, number string, amount string, description strin
 
 	reqBody, _ := json.Marshal(transreq)
 
-	req, err := http.NewRequest("POST", "https://demo.campay.net/api/collect/", bytes.NewBuffer(reqBody))
+	req, err := http.NewRequest("POST", clients.baseUrl+"api/collect/", bytes.NewBuffer(reqBody))
 	fmt.Println(req)
 	if err != nil {
 		fmt.Println("Check post request credentials")
 		log.Fatal(err)
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", apik))
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", clients.apikey))
 	req.Header.Add("Content-Type", "application/json")
 
 	response, err := client.Do(req)
