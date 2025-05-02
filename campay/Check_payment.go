@@ -53,7 +53,7 @@ func (clients *Requests) makeHttpRequest(method string, url string, body io.Read
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", clients.apikey))
 	req.Header.Add("Content-Type", "application/json")
 
-	response, err := http.DefaultClient.Do(req)
+	response, err := clients.client.Do(req)
 
 	if err != nil {
 		fmt.Println("Invalid Request, check post request credentials")

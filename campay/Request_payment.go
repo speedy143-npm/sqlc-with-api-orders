@@ -9,14 +9,16 @@ import (
 )
 
 type Requests struct {
+	client  *http.Client
 	baseUrl string
 	apikey  string
 }
 
-func NewApiClient(baseurl string, apikey string) *Requests {
+func NewApiClient(baseurl string, apikey string, client *http.Client) *Requests {
 	return &Requests{
 		baseUrl: baseurl,
 		apikey:  apikey,
+		client:  client,
 	}
 }
 
@@ -76,7 +78,6 @@ func (clients *Requests) RequestPayment(number string, amount string, descriptio
 	// fmt.Scanln(&ref)
 
 	//Creating a http client
-	client := &http.Client{}
 
 	transreq := Transrequest{
 		From:        number,
@@ -97,7 +98,7 @@ func (clients *Requests) RequestPayment(number string, amount string, descriptio
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", clients.apikey))
 	req.Header.Add("Content-Type", "application/json")
 
-	response, err := client.Do(req)
+	response, err := clients.client.Do(req)
 	if err != nil {
 		fmt.Println("Invalid Request, check POST request credentials")
 		log.Fatal(err)
