@@ -23,7 +23,7 @@ jobs:
            go-version-input: 1.23.3
            go-package: ./...
 
-      - name: Setup Dependencies
+      - name: Setup CI Lint
         run: |
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b $GOPATH/bin
           golangci-lint --version
