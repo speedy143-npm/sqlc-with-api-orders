@@ -37,7 +37,9 @@ func (clients *Requests) CheckPaymentStatus(reference string) Status {
 	}
 
 	var checkState Status
-	json.NewDecoder(bytes.NewBuffer(responsebody)).Decode((&checkState))
+	if err := json.NewDecoder(bytes.NewBuffer(responsebody)).Decode((&checkState)); err != nil {
+		log.Fatal(err)
+	}
 	return checkState
 
 }
@@ -59,8 +61,12 @@ func (clients *Requests) makeHttpRequest(method string, url string, body io.Read
 		fmt.Println("Invalid Request, check post request credentials")
 		log.Fatal(err)
 	}
+	defer func() {
+		if err := response.Body.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
-	defer response.Body.Close()
 	responsebody, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err

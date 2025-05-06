@@ -56,7 +56,9 @@ func (clients *Requests) RequestPayment(number string, amount string, descriptio
 	}
 
 	var transaction Transresponse
-	json.NewDecoder(bytes.NewBuffer(responsebody)).Decode(&transaction)
+	if err := json.NewDecoder(bytes.NewBuffer(responsebody)).Decode(&transaction); err != nil {
+		log.Fatal(err)
+	}
 	return transaction
 
 }
