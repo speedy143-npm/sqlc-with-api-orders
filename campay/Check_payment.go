@@ -32,7 +32,7 @@ func (clients *Requests) CheckPaymentStatus(reference string) Status {
 	responsebody, err := clients.makeHttpRequest("GET", url, nil)
 
 	if err != nil {
-		fmt.Println("Invalid Request, check post request credentials")
+		fmt.Println("Invalid Request, check get request credentials")
 		log.Fatal(err)
 	}
 

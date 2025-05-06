@@ -143,6 +143,15 @@ func (h *MessageHandler) handleCreateOrder(c *gin.Context) {
 		return
 	}
 
+	var prodreq = repo.UpdateProductStockByIdParam{
+		ID: order.ID,
+	}
+	err = h.querier.UpdateProductStockById(c, prodreq)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	//apikey := os.Getenv("API_KEY")
 
 	description := "e-commerce order payment"

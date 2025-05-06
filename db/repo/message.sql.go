@@ -273,3 +273,24 @@ func (q *Queries) UpdateOrderTotalPriceById(ctx context.Context, id string) (Ord
 	)
 	return i, err
 }
+
+
+const UpdateProductStockById = `-- name: UpdateOrderById :exec
+UPDATE "product" p
+SET stock = (p.stock - o.quantity)
+FROM "order" o
+WHERE p.id = o.product_id
+  AND o.id = $1
+
+RETURNING p.id, p.name, p.price, p.stock, p.created_at
+`
+type UpdateProductStockByIdParam struct{
+	ID          string  `json:"id"`
+}
+func (q *Queries)  UpdateProductStockById(ctx context.Context, arg UpdateProductStockByIdParam) error {
+	_, err := q.db.Exec(ctx, UpdateProductStockById, arg.ID)
+	if err !=nil {
+		return  err
+	}
+	return nil
+}
