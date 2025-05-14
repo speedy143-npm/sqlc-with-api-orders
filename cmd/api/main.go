@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/ardanlabs/conf/v3"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -83,10 +84,23 @@ func run() error {
 	handler := api.NewMessageHandler(querier, campayClient).WireHttpHandler()
 
 	// And finally we start the HTTP server on the configured port.
-	err = http.ListenAndServe(fmt.Sprintf(":%d", config.ListenPort), handler)
+	server := &http.Server{
+		Addr:         fmt.Sprintf(":%d", config.ListenPort),
+		Handler:      handler,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	err = server.ListenAndServe()
 	if err != nil {
 		fmt.Println("Error starting server:", err)
 	}
+
+	// err = http.ListenAndServe(fmt.Sprintf(":%d", config.ListenPort), handler)
+	// if err != nil {
+	// 	fmt.Println("Error starting server:", err)
+	// }
 
 	return nil
 }
