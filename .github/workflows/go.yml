@@ -83,10 +83,6 @@ jobs:
       - name: Run Gosec Security Scan
         run: gosec ./...
 
-      - name: Run Gosec Security Scanner
-        uses: securego/gosec-action@v2
-        with:
-          args: ./...
 
   dependency_check:
     needs: test
