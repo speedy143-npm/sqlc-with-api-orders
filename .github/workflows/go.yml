@@ -78,7 +78,7 @@ jobs:
         with:
           go-version: stable
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@v2
+        uses: securego/gosec-action@v2
         with:
           args: ./...
 
