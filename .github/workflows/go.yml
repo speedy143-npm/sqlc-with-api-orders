@@ -68,7 +68,7 @@ jobs:
       - name: Build Application
         run: go build -v ./...
 
-        
+
     format:
     name: Format Code
     runs-on: ubuntu-latest
@@ -78,4 +78,4 @@ jobs:
         with:
           go-version: stable
       - name: Run Go Fmt
-        run: go fmt ./...
+        run: go fmt -v ./...
