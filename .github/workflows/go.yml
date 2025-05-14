@@ -45,7 +45,7 @@ jobs:
 
 
   test:
-    needs: [golangci, govulncheck]
+    needs: [golangci, govulncheck_job]
     name: Run Unit Tests
     runs-on: ubuntu-latest
     steps:
