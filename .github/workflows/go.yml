@@ -67,3 +67,15 @@ jobs:
           go-version: stable
       - name: Build Application
         run: go build -v ./...
+
+        
+    format:
+    name: Format Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Run Go Fmt
+        run: go fmt ./...
