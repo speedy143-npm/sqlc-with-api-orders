@@ -80,6 +80,13 @@ jobs:
       - name: Install Gosec
         run: go install github.com/securego/gosec/v2/cmd/gosec@latest
 
+      - name: Verify Gosec Installation
+        run: gosec -version
+
+      - name: Install Dependencies
+        run: go mod tidy
+
+
       - name: Run Gosec Security Scan
         run: gosec ./...
 
