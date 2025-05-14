@@ -56,8 +56,56 @@ jobs:
       - name: Run Tests
         run: go test -v ./...
 
-  build:
+  format:
     needs: test
+    name: Format Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Run Go Fmt
+        run: go fmt  ./...
+
+  security_scan:
+    needs: test
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Install Gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+      - name: Verify Gosec Installation
+        run: gosec -version
+
+      - name: Install Dependencies
+        run: go mod tidy
+
+
+      - name: Run Gosec Security Scan
+        run: gosec ./...
+
+
+  dependency_check:
+    needs: test
+    name: Check Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Verify Go Modules
+        run: go mod verify
+
+
+  build:
+    needs: [format, security_scan, dependency_check]
     name: Build Project
     runs-on: ubuntu-latest
     steps:
@@ -67,15 +115,3 @@ jobs:
           go-version: stable
       - name: Build Application
         run: go build -v ./...
-
-
-    # format:
-    # name: Format Code
-    # runs-on: ubuntu-latest
-    # steps:
-    #   - uses: actions/checkout@v4
-    #   - uses: actions/setup-go@v5
-    #     with:
-    #       go-version: stable
-    #   - name: Run Go Fmt
-    #     run: go fmt -v ./...
