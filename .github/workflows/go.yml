@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - actions
   pull_request:
-  branches:
+    branches:
       - main
+      - actions
 
 permissions:
   contents: read
